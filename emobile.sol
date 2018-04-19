@@ -1,98 +1,54 @@
 pragma solidity ^0.4.16;
 
-interface token {
-    function transfer(address receiver, uint amount);
-}
-
-contract Crowdsale {
-    address public beneficiary;
-    uint public fundingGoal;
-    uint public amountRaised;
-    uint public deadline;
-    uint public price;
-    token public tokenReward;
-    mapping(address => uint256) public balanceOf;
-    bool fundingGoalReached = false;
-    bool crowdsaleClosed = false;
-
-    event GoalReached(address recipient, uint totalAmountRaised);
-    event FundTransfer(address backer, uint amount, bool isContribution);
-
-    /**
-     * Constructor function
-     *
-     * Setup the owner
-     */
-    function Crowdsale (
-        address ifSuccessfulSendTo,
-        uint fundingGoalInEthers,
-        uint durationInMinutes,
-        uint etherCostOfEachToken,
-        address addressOfTokenUsedAsReward
-    ) {
-        beneficiary = ifSuccessfulSendTo;
-        fundingGoal = fundingGoalInEthers * 1 ether;
-        deadline = now + durationInMinutes * 1 minutes;
-        price = etherCostOfEachToken * 1 ether;
-        tokenReward = token(addressOfTokenUsedAsReward);
+contract Emobile {  
+    
+    bytes plate;      // mobile license-plate
+    uint256 initialFund;     // Gogoro2 price : 60000
+    uint256 timestamp;
+    string driverName;
+    address driverAddress;
+    bool isLock;
+    mapping(bytes32 => Investors) investorStructs;
+    
+    struct Investors {
+        bytes32 name;  // (up to 32 bytes)
+        uint256 amount; // check how many amount the investor send 
     }
-
-    /**
-     * Fallback function
-     *
-     * The function without name is the default function that is called whenever anyone sends funds to a contract
-     */
-    function () public payable {
-        require(!crowdsaleClosed);
-        uint amount = msg.value;
-        balanceOf[msg.sender] += amount;
-        amountRaised += amount;
-        tokenReward.transfer(msg.sender, amount / price);
-        emit FundTransfer(msg.sender, amount, true);
+    
+    mapping(address => Investors) public investors;
+    
+    function setDriver(address mobile, string _driverName) public {
+        driverName = driverName;
     }
-
-    modifier afterDeadline() { if (now >= deadline) _; }
-
-    /**
-     * Check if goal was reached
-     *
-     * Checks if the goal or time limit has been reached and ends the campaign
-     */
-    function checkGoalReached()  public afterDeadline {
-        if (amountRaised >= fundingGoal){
-            fundingGoalReached = true;
-            emit GoalReached(beneficiary, amountRaised);
-        }
-        crowdsaleClosed = true;
+    
+    function getProfitValue(address mobile) public constant returns(uint) {
+        // return mobiles[mobile].fund;
+        return 100;
     }
-
-
-    /**
-     * Withdraw the funds
-     *
-     * Checks to see if goal or time limit has been reached, and if so, and the funding goal was reached,
-     * sends the entire amount to the beneficiary. If goal was not reached, each contributor can withdraw
-     * the amount they contributed.
-     */
-    function safeWithdrawal() public afterDeadline {
-        if (!fundingGoalReached) {
-            uint amount = balanceOf[msg.sender];
-            balanceOf[msg.sender] = 0;
-            if (amount > 0) {
-                if (msg.sender.send(amount)) {
-                    emit FundTransfer(msg.sender, amount, false);
-                } else {
-                    balanceOf[msg.sender] = amount;
-                }
-            }
-        }
-
-        if (fundingGoalReached && beneficiary == msg.sender) {
-            if (beneficiary.send(amountRaised)) {
-                emit FundTransfer(beneficiary, amountRaised, false);
-            } else {
-                //If we fail to send the funds to beneficiary, unlock funders balance
-                fundingGoalReached = false;
+    
+    function getMobileInformation(address mobile) public constant returns(bytes, uint256, string, bool, uint256) {
+        return (plate, initialFund, driverName, isLock, timestamp);
+    }
+    
+    function getInvesterRatio() public constant returns(uint256) {
+        return 5;
+    }
+    
+    function repay(address mobile, address[] _investors) {
+        uint totalAmount = getProfitValue(mobile);
+        // determine the caller is investor or not.
+        
+        // repay all the money to every invenstor
+        for (uint i = 0; i <  _investors.length; i++) {
+            // check what ratio do the investor get.
+            // investors[0] for company investors[1] for passenger, investors[2] and other are investors...
+            if(i==0) {
+                _investors[i].transfer(totalAmount * 5);
+            } else if (i==1) {
+                _investors[i].transfer(totalAmount * 45);
+            } else{
+                // check the investor's ratio
+                _investors[i].transfer(totalAmount * 50);
             }
         }
     }
